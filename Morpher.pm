@@ -34,7 +34,7 @@ multi morph($_ where 'class', Str $name, @ ('block', **@body)) {
     }
 
     slip
-        (.?attach-match('struct'), $name, ('block', |@members)),
+        (.?attach-match('struct'), $name, |@members),
         (.?attach-match('role'), $name, ('block', |@role)),
         (.?attach-match('impl'), $name, ('block', |@impl));
 }
