@@ -7,13 +7,25 @@ sub pretty($_) {
         take '(';
 
         if $_ {
-            take .[0];
+            my ($n, $pre);
+            given .[0] {
+                when any(<unit block>) {
+                    $n = 1;
+                    $pre = "\n" ~ '  ' x ++$i;
+                }
+                when any(<role impl>) {
+                    $n = 2;
+                    $pre = "\n" ~ '  ' x ++$i;
+                }
+                default {
+                    $n = 1;
+                    $pre = ' ';
+                }
+            }
 
-            my $pre := .[0] ~~ any(<unit block>)
-                ?? slip "\n", '  ' x ++$i
-                !! ' ';
+            take |.[^$n];
 
-            for .[1..*] {
+            for .[$n..*] {
                 take $pre;
                 compile($_, $i);
             }
