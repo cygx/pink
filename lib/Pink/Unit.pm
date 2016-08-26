@@ -1,7 +1,3 @@
-unit class Pink::Unit;
-
-class Pink::Unit::X is Exception {}
-
 my class Dict {
     also does Iterable;
     also does Positional;
@@ -80,30 +76,32 @@ my class StructType {
     has $.members = dict;
 }
 
-has $.types = dict;
-has $.roles = dict;
+class Pink::Unit {
+    has $.types = dict;
+    has $.roles = dict;
 
-method load($ast) {
-    given self.bless {
-        .process(|$ast);
-        $_;
-    }
-}
-
-method process('unit', **@_) {
-    for @_ {
-        when :('struct', Str, **@) {
-            my ($, $name, **@members) = @$_;
-            $!types{$name} = StructType.new(
-                :$name,
-                :members(dict @members.map(-> (Str $type, Str $name) {
-                    StructMember.new(:$name, :$type);
-                }))
-            );
+    method load($ast) {
+        given self.bless {
+            .process(|$ast);
+            $_;
         }
     }
-}
 
-method write($io, :$pretty) {
-    die 'TODO';
+    method process('unit', **@_) {
+        for @_ {
+            when :('struct', Str, **@) {
+                my ($, $name, **@members) = @$_;
+                $!types{$name} = StructType.new(
+                    :$name,
+                    :members(dict @members.map(-> (Str $type, Str $name) {
+                        StructMember.new(:$name, :$type);
+                    }))
+                );
+            }
+        }
+    }
+
+    method write($io, :$pretty) {
+        die 'TODO';
+    }
 }

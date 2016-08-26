@@ -1,6 +1,6 @@
-unit class Pink::Preprocessor;
+use Pink::X;
 
-class Pink::Preprocessor::X is Exception {
+class X::Pink::Desugar is X::Pink {
     has $.capture;
     has $.message;
 
@@ -9,45 +9,44 @@ class Pink::Preprocessor::X is Exception {
     }
 }
 
-method process($ast) { desugar |$ast }
+class Pink::Preprocessor {
+    method process($ast) { desugar |$ast }
+    method dump($ast, $io) { $io.put([~] do gather compile($ast, 0)) }
+}
 
-method dump($ast, $io) {
-    multi compile(List $_, $i is copy) {
-        take '(';
+multi compile(List $_, $i is copy) {
+    take '(';
 
-        if $_ {
-            my ($n, $pre);
-            given .[0] {
-                when any(<unit block>) {
-                    $n = 1;
-                    $pre = "\n" ~ '  ' x ++$i;
-                }
-                when any(<role impl>) {
-                    $n = 2;
-                    $pre = "\n" ~ '  ' x ++$i;
-                }
-                default {
-                    $n = 1;
-                    $pre = ' ';
-                }
+    if $_ {
+        my ($n, $pre);
+        given .[0] {
+            when any(<unit block>) {
+                $n = 1;
+                $pre = "\n" ~ '  ' x ++$i;
             }
-
-            take |.[^$n];
-
-            for .[$n..*] {
-                take $pre;
-                compile($_, $i);
+            when any(<role impl>) {
+                $n = 2;
+                $pre = "\n" ~ '  ' x ++$i;
+            }
+            default {
+                $n = 1;
+                $pre = ' ';
             }
         }
 
-        take ')';
+        take |.[^$n];
+
+        for .[$n..*] {
+            take $pre;
+            compile($_, $i);
+        }
     }
 
-    multi compile(Str $_, $i) {
-        take /^\w+$/ ?? $_ !! "'$_'"
-    }
+    take ')';
+}
 
-    $io.put([~] do gather compile($ast, 0));
+multi compile(Str $_, $i) {
+    take /^\w+$/ ?? $_ !! "'$_'"
 }
 
 multi desugar($_ where 'unit', **@_) {
@@ -90,5 +89,5 @@ multi desugar($_ where 'class', Str $name, @ ('block', **@body)) {
 }
 
 multi desugar(|c) {
-    Pink::Preprocessor::X.new(capture => c).throw;
+    X::Pink::Desugar.new(capture => c).throw;
 }

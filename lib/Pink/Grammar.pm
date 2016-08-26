@@ -1,6 +1,6 @@
-unit grammar Pink::Grammar;
+use Pink::X;
 
-class Pink::Grammar::X is Exception {
+class X::Pink::Syntax is X::Pink {
     has $.msg;
     has $.line;
     has $.line-number;
@@ -38,81 +38,83 @@ is hidden-from-backtrace {
     Pink::Grammar::X.new(:$msg, :$line, :$line-number, :$line-offset).throw;
 }
 
-token name      { <:letter> \w* }
-token longname  { <.name>+ % '::' }
-token comma     { \h* ',' \s* }
-token rolemark  { '~' }
+grammar Pink::Grammar {
+    token name      { <:letter> \w* }
+    token longname  { <.name>+ % '::' }
+    token comma     { \h* ',' \s* }
+    token rolemark  { '~' }
 
-token TOP is hidden-from-backtrace {
-    \s* <definition>* % [ \h* \v \s* ] \s*
-    { make ('unit' but Matched[$/], |$<definition>>>.made) }
-}
-
-token definition {
-    <pragma=.name> \h+ <name=.longname>
-    [ \h+ <?before '('> [ <signature> ||{bailout} ] ]?
-    [ <infix> <expression> | \h+ <block> ]?
-    {
-        make (~$<pragma> but Matched[$/], ~$<name>,
-            $<infix> ?? ($<infix>.made, $<expression>.made) !!
-            $<block> ?? $<block>.made !! Empty);
+    token TOP is hidden-from-backtrace {
+        \s* <definition>* % [ \h* \v \s* ] \s*
+        { make ('unit' but Matched[$/], |$<definition>>>.made) }
     }
-}
 
-token signature {
-    '(' ~ ')' [ \s*
-        <declarator>* % <.comma>
-        [ \h+ '-->' \s+ [ <longname> <rolemark>? | <name> ] ]?
-    \s* ]
-}
-
-
-token declarator {
-    <type=.name> <rolemark>? \h+ <name>
-    { make ($<type> ~ ($<rolemark> // ''), ~$<name>) }
-}
-
-token arglist {
-    '(' ~ ')' [ \s* <expression>* % <.comma> \s* ]
-}
-
-token term {
-    <longname>
-}
-
-token infix {
-    [ \h* (':') \s+
-    | \h+ (<.name>) \h+
-    | \h+ (<[\S]-[\w,;.]>+) \h+
-    ] { make ~($0 // $1 // $2) }
-}
-
-token declaration {
-    <name> \h+ <declarator> [ <infix> <expression> ]?
-    {
-        make (
-            ~$<name>,
-            |$<declarator>.made,
-            $<infix> ?? ($<infix>.made, $<expression>.made) !! Empty
-        );
+    token definition {
+        <pragma=.name> \h+ <name=.longname>
+        [ \h+ <?before '('> [ <signature> ||{bailout} ] ]?
+        [ <infix> <expression> | \h+ <block> ]?
+        {
+            make (~$<pragma> but Matched[$/], ~$<name>,
+                $<infix> ?? ($<infix>.made, $<expression>.made) !!
+                $<block> ?? $<block>.made !! Empty);
+        }
     }
-}
 
-token statement {
-    [ <name> \h+ ]? <expression>+ % <.comma>
-    { make ($<name> ?? ~$<name> !! 'do', |$<expression>>>.made) }
-}
+    token signature {
+        '(' ~ ')' [ \s*
+            <declarator>* % <.comma>
+            [ \h+ '-->' \s+ [ <longname> <rolemark>? | <name> ] ]?
+        \s* ]
+    }
 
-token expression {
-    <term>+ % <infix>
-}
 
-token lines {
-    [ <line=.declaration> | <line=.statement> ]* % [ \h* \v \s* ]
-    { make $<line>>>.made }
-}
+    token declarator {
+        <type=.name> <rolemark>? \h+ <name>
+        { make ($<type> ~ ($<rolemark> // ''), ~$<name>) }
+    }
 
-token block {
-    '{' ~ '}' [ \s* <lines> \s* ]
-    { make ('block', |$<lines>.made) }
+    token arglist {
+        '(' ~ ')' [ \s* <expression>* % <.comma> \s* ]
+    }
+
+    token term {
+        <longname>
+    }
+
+    token infix {
+        [ \h* (':') \s+
+        | \h+ (<.name>) \h+
+        | \h+ (<[\S]-[\w,;.]>+) \h+
+        ] { make ~($0 // $1 // $2) }
+    }
+
+    token declaration {
+        <name> \h+ <declarator> [ <infix> <expression> ]?
+        {
+            make (
+                ~$<name>,
+                |$<declarator>.made,
+                $<infix> ?? ($<infix>.made, $<expression>.made) !! Empty
+            );
+        }
+    }
+
+    token statement {
+        [ <name> \h+ ]? <expression>+ % <.comma>
+        { make ($<name> ?? ~$<name> !! 'do', |$<expression>>>.made) }
+    }
+
+    token expression {
+        <term>+ % <infix>
+    }
+
+    token lines {
+        [ <line=.declaration> | <line=.statement> ]* % [ \h* \v \s* ]
+        { make $<line>>>.made }
+    }
+
+    token block {
+        '{' ~ '}' [ \s* <lines> \s* ]
+        { make ('block', |$<lines>.made) }
+    }
 }
