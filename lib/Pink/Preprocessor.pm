@@ -11,6 +11,45 @@ class Pink::Preprocessor::X is Exception {
 
 method process($ast) { desugar |$ast }
 
+method dump($ast, $io) {
+    multi compile(List $_, $i is copy) {
+        take '(';
+
+        if $_ {
+            my ($n, $pre);
+            given .[0] {
+                when any(<unit block>) {
+                    $n = 1;
+                    $pre = "\n" ~ '  ' x ++$i;
+                }
+                when any(<role impl>) {
+                    $n = 2;
+                    $pre = "\n" ~ '  ' x ++$i;
+                }
+                default {
+                    $n = 1;
+                    $pre = ' ';
+                }
+            }
+
+            take |.[^$n];
+
+            for .[$n..*] {
+                take $pre;
+                compile($_, $i);
+            }
+        }
+
+        take ')';
+    }
+
+    multi compile(Str $_, $i) {
+        take /^\w+$/ ?? $_ !! "'$_'"
+    }
+
+    $io.put([~] do gather compile($ast, 0));
+}
+
 multi desugar($_ where 'unit', **@_) {
     ($_, |@_.map({ desugar |$_ }));
 }

@@ -103,3 +103,7 @@ method process('unit', **@_) {
         }
     }
 }
+
+method write($io, :$pretty) {
+    die 'TODO';
+}
