@@ -49,5 +49,8 @@ class Point {
 }
 END
 
-say pretty $ast;
-say pretty process $ast;
+my $past = process $ast;
+
+say pretty($ast), "\n";
+say pretty($past), "\n";
+say load($past), "\n";
