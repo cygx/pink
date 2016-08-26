@@ -1,17 +1,28 @@
-proto morph(|) is export {*}
+unit class Pink::Preprocessor;
 
-multi morph($_ where 'unit', **@_) {
-    ($_, |@_.map({ morph |$_ }));
+class Pink::Preprocessor::X is Exception {
+    has $.capture;
+    has $.message;
+
+    submethod BUILD(:$!capture) {
+        $!message = $!capture.perl;
+    }
 }
 
-multi morph('has', $type, $name, :$class!, :$role!) {
+method process($ast) { desugar |$ast }
+
+multi desugar($_ where 'unit', **@_) {
+    ($_, |@_.map({ desugar |$_ }));
+}
+
+multi desugar('has', $type, $name, :$class!, :$role!) {
     slip
         ('fn', $name, ('paras', ("$class~", 'self')),('ret', $type)),
         ('fn', $name, ('paras', ("$class~", 'self'), ($type, $name)),
             ('ret', $name));
 }
 
-multi morph('has', $type, $name, :$class!, :$impl!) {
+multi desugar('has', $type, $name, :$class!, :$impl!) {
     slip
         ('fn', $name, ('paras', ("$class", 'self')),('ret', $type),
             ('block', ('call', $name, ('lex', 'self')))),
@@ -20,7 +31,7 @@ multi morph('has', $type, $name, :$class!, :$impl!) {
             ('block',));
 }
 
-multi morph($_ where 'class', Str $name, @ ('block', **@body)) {
+multi desugar($_ where 'class', Str $name, @ ('block', **@body)) {
     my @members;
     my @role;
     my @impl;
@@ -28,8 +39,8 @@ multi morph($_ where 'class', Str $name, @ ('block', **@body)) {
     for @body {
         when .[0] === 'has' {
             @members.push(.[1..*]);
-            @role.push(morph(|$_, class => $name, :role));
-            @impl.push(morph(|$_, class => $name, :impl));
+            @role.push(desugar(|$_, class => $name, :role));
+            @impl.push(desugar(|$_, class => $name, :impl));
         }
     }
 
@@ -39,6 +50,6 @@ multi morph($_ where 'class', Str $name, @ ('block', **@body)) {
         (.?attach-match('impl'), $name, |@impl);
 }
 
-multi morph(|c) {
-    die c.perl;
+multi desugar(|c) {
+    Pink::Preprocessor::X.new(capture => c).throw;
 }

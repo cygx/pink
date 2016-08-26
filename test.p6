@@ -1,8 +1,9 @@
-use lib '.';
-use Parser;
-use Morpher;
+use lib 'lib';
+use Pink;
 
 sub pretty($_) {
+    my proto compile(|) {*}
+
     multi compile(List $_, $i is copy) {
         take '(';
 
@@ -49,4 +50,4 @@ class Point {
 END
 
 say pretty $ast;
-say pretty morph(|$ast);
+say pretty process $ast;
