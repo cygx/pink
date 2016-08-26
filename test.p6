@@ -1,17 +1,17 @@
 use lib 'lib';
-use Pink <parse process load dump>;
+use Pink <parse process load dump compile>;
 
-my $ast = parse q:to/END/;
+my $code = q:to/END/;
 class Point {
     has f64 x
     has f64 y
 }
 END
 
+my $ast = parse $code;
 my $past = process $ast;
+my $unit = load $past;
 
 dump $ast;
 dump $past;
-
-my $unit = load $past;
-$unit.write($*OUT);
+print compile $unit;
